@@ -99,6 +99,19 @@
             color: #edf2f7; /* White text for scores */
         }
 
+        .game-info-panel {
+            background-color: #4a5568;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 1.1em;
+            text-align: center;
+            line-height: 1.6;
+            color: #cbd5e0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .controls-info {
             background-color: #4a5568;
             border-radius: 8px;
@@ -131,6 +144,10 @@
                 justify-content: space-around;
                 font-size: 1.5em;
             }
+            .game-info-panel {
+                flex-direction: row;
+                justify-content: space-around;
+            }
         }
 
         @media (max-width: 600px) {
@@ -140,7 +157,7 @@
             .score-board {
                 font-size: 1.2em;
             }
-            .controls-info {
+            .game-info-panel, .controls-info {
                 font-size: 0.9em;
                 padding: 10px;
             }
@@ -165,6 +182,10 @@
                     <span>Player 1: <span id="player1Score">0</span></span>
                     <span>Player 2: <span id="player2Score">0</span></span>
                 </div>
+                <div class="game-info-panel">
+                    <span>Time: <span id="gameTimeDisplay">0.0</span>s</span>
+                    <span>Speed: <span id="ballSpeedDisplay">0.0</span></span>
+                </div>
                 <div class="controls-info">
                     <p><strong>Player 1 Controls:</strong> <br> Move Up: <strong>W</strong> &nbsp; Move Down: <strong>S</strong></p>
                     <p><strong>Player 2 Controls:</strong> <br> Move Up: <strong>&#8593; (Arrow Up)</strong> &nbsp; Move Down: <strong>&#8595; (Arrow Down)</strong></p>
@@ -179,9 +200,11 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Get score display elements
+        // Get score and game info display elements
         const player1ScoreDisplay = document.getElementById('player1Score');
         const player2ScoreDisplay = document.getElementById('player2Score');
+        const gameTimeDisplay = document.getElementById('gameTimeDisplay');
+        const ballSpeedDisplay = document.getElementById('ballSpeedDisplay');
 
         // Game dimensions and elements
         const GAME_WIDTH = 800;
@@ -190,6 +213,13 @@
         const PADDLE_HEIGHT = 100;
         const BALL_RADIUS = 10;
         const INITIAL_BALL_SPEED = 5; // Initial speed of the ball
+
+        // Game state variables
+        let gameStarted = false;
+        let gameTime = 0; // in seconds
+        let lastFrameTime = performance.now(); // For tracking time and speed
+        const BALL_SPEED_INCREASE_RATE = 0.005; // Rate at which ball speed increases per second
+        let currentBallSpeed = INITIAL_BALL_SPEED; // This will be dynamically updated
 
         // Player 1 paddle object
         let player1 = {
@@ -216,28 +246,29 @@
             x: GAME_WIDTH / 2,
             y: GAME_HEIGHT / 2,
             radius: BALL_RADIUS,
-            dx: INITIAL_BALL_SPEED, // Horizontal movement speed
-            dy: INITIAL_BALL_SPEED // Vertical movement speed
+            dx: 0, // Initial horizontal speed (starts at 0, set on Enter)
+            dy: 0 // Initial vertical speed (starts at 0, set on Enter)
         };
 
         // Object to track pressed keys
         let keysPressed = {};
 
         /**
-         * Resets the ball's position and direction after a point is scored.
-         * The ball starts from the center, moving towards the player who just scored.
-         * @param {number} losingPlayer - 1 if player 1 lost, 2 if player 2 lost.
+         * Resets the ball's position and direction after a point is scored or game restarts.
+         * The ball always starts from the center with no initial movement.
          */
-        function resetBall(losingPlayer) {
+        function resetBall() {
             ball.x = GAME_WIDTH / 2;
             ball.y = GAME_HEIGHT / 2;
-            // Determine initial direction based on who lost the point
-            ball.dx = (losingPlayer === 1 ? INITIAL_BALL_SPEED : -INITIAL_BALL_SPEED);
-            ball.dy = (Math.random() < 0.5 ? INITIAL_BALL_SPEED : -INITIAL_BALL_SPEED); // Random vertical direction
+            ball.dx = 0; // Stop ball
+            ball.dy = 0; // Stop ball
+            gameStarted = false; // Game is paused until 'Enter' is pressed
+            gameTime = 0; // Reset game time
+            currentBallSpeed = INITIAL_BALL_SPEED; // Reset ball speed
         }
 
         /**
-         * Draws the game elements (paddles, ball, scores) on the canvas.
+         * Draws the game elements (paddles, ball, scores, info) on the canvas.
          */
         function draw() {
             // Clear the entire canvas
@@ -260,12 +291,40 @@
             // Update score displays
             player1ScoreDisplay.textContent = player1.score;
             player2ScoreDisplay.textContent = player2.score;
+
+            // Update time and speed displays
+            gameTimeDisplay.textContent = gameTime.toFixed(1);
+            ballSpeedDisplay.textContent = currentBallSpeed.toFixed(1);
+
+            // Draw "Press Enter to Start" message if game is not started
+            if (!gameStarted) {
+                ctx.fillStyle = '#a0aec0'; /* Light grey */
+                ctx.font = '40px "Inter"';
+                ctx.textAlign = 'center';
+                ctx.fillText('Press Enter to Start', GAME_WIDTH / 2, GAME_HEIGHT / 2);
+            }
         }
 
         /**
          * Updates the game state, including ball movement, paddle movement, and collision detection.
          */
         function update() {
+            // Only update game elements if the game has started
+            if (!gameStarted) {
+                return;
+            }
+
+            // Calculate delta time for consistent updates across different frame rates
+            const currentTime = performance.now();
+            const deltaTime = (currentTime - lastFrameTime) / 1000; // time in seconds
+            lastFrameTime = currentTime;
+
+            // Update game time
+            gameTime += deltaTime;
+
+            // Increase ball speed over time
+            currentBallSpeed = INITIAL_BALL_SPEED * (1 + gameTime * BALL_SPEED_INCREASE_RATE);
+
             // Move paddles based on their dy (movement speed)
             player1.y += player1.dy;
             player2.y += player2.dy;
@@ -274,9 +333,9 @@
             player1.y = Math.max(0, Math.min(player1.y, GAME_HEIGHT - player1.height));
             player2.y = Math.max(0, Math.min(player2.y, GAME_HEIGHT - player2.height));
 
-            // Move the ball
-            ball.x += ball.dx;
-            ball.y += ball.dy;
+            // Move the ball, applying the current speed while preserving direction
+            ball.x += Math.sign(ball.dx) * currentBallSpeed;
+            ball.y += Math.sign(ball.dy) * currentBallSpeed;
 
             // Ball collision with top and bottom walls
             if (ball.y + ball.radius > GAME_HEIGHT || ball.y - ball.radius < 0) {
@@ -284,36 +343,36 @@
             }
 
             // Ball collision with paddles
-            // Player 1 paddle collision
+            // Player 1 paddle collision (left paddle)
             if (ball.dx < 0 && // Ball is moving left
                 ball.x - ball.radius < player1.x + player1.width && // Ball's left edge is past paddle's right edge
                 ball.y + ball.radius > player1.y && // Ball's bottom edge is below paddle's top edge
                 ball.y - ball.radius < player1.y + player1.height) { // Ball's top edge is above paddle's bottom edge
                 ball.dx *= -1; // Reverse horizontal direction
-                // Adjust ball position to prevent sticking
+                // Adjust ball position to prevent sticking inside the paddle
                 ball.x = player1.x + player1.width + ball.radius;
             }
 
-            // Player 2 paddle collision
+            // Player 2 paddle collision (right paddle)
             if (ball.dx > 0 && // Ball is moving right
                 ball.x + ball.radius > player2.x && // Ball's right edge is past paddle's left edge
                 ball.y + ball.radius > player2.y && // Ball's bottom edge is below paddle's top edge
                 ball.y - ball.radius < player2.y + player2.height) { // Ball's top edge is above paddle's bottom edge
                 ball.dx *= -1; // Reverse horizontal direction
-                // Adjust ball position to prevent sticking
+                // Adjust ball position to prevent sticking inside the paddle
                 ball.x = player2.x - ball.radius;
             }
 
             // Scoring
-            // Ball goes past player 2 (left side) - Player 1 scores
+            // Ball goes past player 1 (left side) - Player 2 scores
             if (ball.x - ball.radius < 0) {
                 player2.score++;
-                resetBall(1); // Player 1 lost, so ball starts moving towards player 1
+                resetBall(); // Reset ball position and game state
             }
-            // Ball goes past player 1 (right side) - Player 2 scores
+            // Ball goes past player 2 (right side) - Player 1 scores
             if (ball.x + ball.radius > GAME_WIDTH) {
                 player1.score++;
-                resetBall(2); // Player 2 lost, so ball starts moving towards player 2
+                resetBall(); // Reset ball position and game state
             }
         }
 
@@ -327,12 +386,22 @@
         }
 
         /**
-         * Handles key presses for paddle movement.
+         * Handles key presses for paddle movement and game start.
          * @param {KeyboardEvent} event - The keyboard event object.
          */
         document.addEventListener('keydown', (event) => {
             keysPressed[event.key] = true; // Mark key as pressed
-            // Prevent default browser behavior for arrow keys to stop page scrolling
+
+            // Start game on Enter key press if not already started
+            if (event.key === 'Enter' && !gameStarted) {
+                gameStarted = true;
+                // Give ball random initial direction
+                ball.dx = (Math.random() < 0.5 ? 1 : -1) * INITIAL_BALL_SPEED; // Random horizontal direction
+                ball.dy = (Math.random() < 0.5 ? 1 : -1) * INITIAL_BALL_SPEED; // Random vertical direction
+                lastFrameTime = performance.now(); // Start timing for speed calculation
+            }
+
+            // Prevent default browser behavior for specific keys to stop page scrolling
             if (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'w' || event.key === 's') {
                 event.preventDefault();
             }
@@ -349,7 +418,7 @@
         });
 
         /**
-         * Updates paddle's dy based on currently pressed keys.
+         * Updates paddle's dy (vertical movement speed) based on currently pressed keys.
          */
         function updatePaddleMovement() {
             // Player 1 controls (W, S)
@@ -380,13 +449,20 @@
         canvas.addEventListener('touchstart', (event) => {
             event.preventDefault(); // Prevent default browser touch behavior (like scrolling)
 
+            if (!gameStarted) { // If game not started, a touch can act like 'Enter'
+                 gameStarted = true;
+                 ball.dx = (Math.random() < 0.5 ? 1 : -1) * INITIAL_BALL_SPEED;
+                 ball.dy = (Math.random() < 0.5 ? 1 : -1) * INITIAL_BALL_SPEED;
+                 lastFrameTime = performance.now();
+            }
+
             for (let i = 0; i < event.touches.length; i++) {
                 const touch = event.touches[i];
                 const rect = canvas.getBoundingClientRect();
                 const touchX = touch.clientX - rect.left;
                 const touchY = touch.clientY - rect.top;
 
-                // Determine if touch is for Player 1 or Player 2
+                // Determine if touch is for Player 1 or Player 2 based on horizontal position
                 if (touchX < GAME_WIDTH / 2) { // Left half for Player 1
                     if (touchY < player1.y + PADDLE_HEIGHT / 2) {
                         player1.dy = -7; // Move up
@@ -416,13 +492,14 @@
             }
         });
 
-        // Set canvas dimensions
-        // The game logic works with fixed GAME_WIDTH and GAME_HEIGHT,
-        // but the canvas display size adjusts to fit the container.
+        /**
+         * Sets the canvas dimensions. The game logic uses fixed GAME_WIDTH and GAME_HEIGHT,
+         * but the canvas display size adjusts responsively to fit its container while
+         * maintaining the aspect ratio.
+         */
         function setCanvasDimensions() {
             canvas.width = GAME_WIDTH;
             canvas.height = GAME_HEIGHT;
-            // For responsive display, set max-width and height on the style
             // The game-area now has a flexible width, so let the canvas fill it.
             canvas.style.width = '100%';
             canvas.style.height = `${GAME_HEIGHT * (canvas.offsetWidth / GAME_WIDTH)}px`; /* Maintain aspect ratio */
@@ -430,7 +507,8 @@
             // Adjust the height to ensure it fits within the viewport, if needed, maintaining aspect ratio.
             const gameArea = document.querySelector('.game-area');
             const gameAreaRect = gameArea.getBoundingClientRect();
-            if (gameAreaRect.height > window.innerHeight - 80) { // Keep some margin for title/controls
+            // Check if current height exceeds available viewport height minus some padding
+            if (gameAreaRect.height > window.innerHeight - 80) {
                 canvas.style.height = (window.innerHeight - 80) + 'px';
                 canvas.style.width = (GAME_WIDTH * (canvas.offsetHeight / GAME_HEIGHT)) + 'px';
             }
@@ -439,8 +517,8 @@
         // Call functions to initialize and start the game
         window.onload = function() {
             setCanvasDimensions();
-            resetBall(Math.random() < 0.5 ? 1 : 2); // Initial random direction
-            gameLoop(); // Start the animation loop
+            resetBall(); // Ensure ball is in center, game is paused
+            gameLoop(); // Start the animation loop to draw the initial state and message
         };
 
         // Adjust canvas dimensions on window resize
