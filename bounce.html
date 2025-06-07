@@ -99,8 +99,10 @@
         let gameAreaHeight, gameAreaWidth, paddleHeight, ballSize;
 
         let ballX, ballY;
-        let ballSpeedX = 4; // Pixels per frame
-        let ballSpeedY = 4; // Pixels per frame
+        let ballSpeedX = 6; // Pixels per frame
+        let ballSpeedY = 6; // Pixels per frame
+        let speedIncrement = 0.2;
+        let roundStartTime;
 
         let paddle1Y, paddle2Y;
         const paddleSpeed = 8;
@@ -146,6 +148,17 @@
 
             // Ensure ball moves towards a player
             if (ballSpeedX === 0) ballSpeedX = Math.random() < 0.5 ? 3 : -3;
+            roundStartTime = Date.now();
+            increaseBallSpeed();
+        }
+        
+        function increaseBallSpeed() {
+            ballSpeedX += (ballSpeedX > 0 ? 1 : -1) * speedIncrement;
+            ballSpeedY += (ballSpeedY > 0 ? 1 : -1) * speedIncrement;
+
+            // Limit the maximum speed
+            ballSpeedX = Math.max(Math.min(ballSpeedX, 15), -15);
+            ballSpeedY = Math.max(Math.min(ballSpeedY, 15), -15);
         }
 
         function updateScores() {
@@ -234,6 +247,9 @@
                 checkWin();
                 if (gameRunning) resetBall();
             }
+
+            let roundTime = (Date.now() - roundStartTime) / 1000;
+            messageDisplay.textContent = `Round Time: ${roundTime.toFixed(2)} seconds`;
 
             // Update positions
             paddle1.style.top = paddle1Y + 'px';
