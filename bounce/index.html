@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two-Player Bounce Ball Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Bounce Ball Showdown!</h1>
+        <div class="main-game-layout">
+            <div class="game-area">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            <div class="info-area">
+                <div class="score-board">
+                    <span>Player 1: <span id="player1Score">0</span></span>
+                    <span>Player 2: <span id="player2Score">0</span></span>
+                </div>
+                <div class="game-info-panel">
+                    <span>Time: <span id="gameTimeDisplay">0.0</span>s</span>
+                    <span>Speed: <span id="ballSpeedDisplay">0.0</span></span>
+                </div>
+                <div class="controls-info">
+                    <p><strong>Player 1 Controls:</strong> <br> Move Up: <strong>W</strong> &nbsp; Move Down: <strong>S</strong></p>
+                    <p><strong>Player 2 Controls:</strong> <br> Move Up: <strong>&#8593; (Arrow Up)</strong> &nbsp; Move Down: <strong>&#8595; (Arrow Down)</strong></p>
+                    <p><strong>Touch Controls:</strong> <br> Player 1: Tap left half of screen &nbsp; Player 2: Tap right half of screen</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

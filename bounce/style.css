@@ -1,0 +1,162 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #1a202c; /* Dark background */
+    font-family: 'Inter', sans-serif;
+    color: #e2e8f0; /* Light text color */
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.game-container {
+    background-color: #2d3748; /* Slightly lighter dark for container */
+    border-radius: 12px;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 95vw; /* Responsive width */
+    width: 1200px; /* Max width for desktop to accommodate two panes */
+    gap: 20px;
+}
+
+h1 {
+    color: #90cdf4; /* Light blue heading */
+    margin-bottom: 20px;
+    font-size: 2.5em;
+    text-align: center;
+}
+
+/* Main layout for game and info panes */
+.main-game-layout {
+    display: flex;
+    flex-direction: row; /* Default: side-by-side */
+    gap: 20px;
+    width: 100%;
+    justify-content: center;
+    align-items: flex-start; /* Align items to the top */
+}
+
+.game-area {
+    flex: 2; /* Game area takes more space */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000; /* Black background for game area */
+    border: 2px solid #a0aec0; /* Grey border for canvas */
+    border-radius: 8px;
+    overflow: hidden; /* Ensure canvas doesn't overflow */
+    position: relative; /* For canvas positioning */
+}
+
+canvas {
+    display: block;
+    touch-action: none; /* Disable default touch actions like scrolling/zooming */
+    max-width: 100%; /* Ensure canvas scales down */
+    height: auto; /* Maintain aspect ratio */
+    border-radius: 6px; /* Slightly smaller border radius for canvas itself */
+}
+
+.info-area {
+    flex: 1; /* Info area takes less space */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 15px;
+    background-color: #2d3748; /* Same as game-container */
+    border-radius: 12px;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.score-board {
+    display: flex;
+    flex-direction: column; /* Stack scores vertically in info pane */
+    gap: 10px;
+    width: 100%;
+    font-size: 1.8em;
+    font-weight: 700;
+    background-color: #4a5568; /* Darker grey for score background */
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+}
+
+.score-board span {
+    padding: 5px 10px;
+    color: #edf2f7; /* White text for scores */
+}
+
+.game-info-panel {
+    background-color: #4a5568;
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 1.1em;
+    text-align: center;
+    line-height: 1.6;
+    color: #cbd5e0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.controls-info {
+    background-color: #4a5568;
+    border-radius: 8px;
+    padding: 15px;
+    font-size: 1.1em;
+    text-align: center;
+    line-height: 1.6;
+    color: #cbd5e0;
+}
+
+.controls-info strong {
+    color: #63b3ed; /* Brighter blue for key names */
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .main-game-layout {
+        flex-direction: column; /* Stack panes vertically on smaller screens */
+        align-items: center; /* Center items when stacked */
+    }
+    .game-area, .info-area {
+        width: 100%; /* Full width when stacked */
+        max-width: 600px; /* Limit width for aesthetics on medium screens */
+    }
+    .info-area {
+        margin-top: 20px; /* Add some space between stacked panes */
+    }
+    .score-board {
+        flex-direction: row; /* Arrange scores side-by-side again */
+        justify-content: space-around;
+        font-size: 1.5em;
+    }
+    .game-info-panel {
+        flex-direction: row;
+        justify-content: space-around;
+    }
+}
+
+@media (max-width: 600px) {
+    h1 {
+        font-size: 2em;
+    }
+    .score-board {
+        font-size: 1.2em;
+    }
+    .game-info-panel, .controls-info {
+        font-size: 0.9em;
+        padding: 10px;
+    }
+    .game-container {
+        padding: 15px;
+    }
+    .score-board span {
+        padding: 5px 8px;
+    }
+}
