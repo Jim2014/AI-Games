@@ -1,9 +1,17 @@
+// utils.js
+// This module provides a collection of general utility functions.
+
 import { GAME_WIDTH, GAME_HEIGHT } from './constants.js';
 
+/**
+ * Sets the canvas dimensions and makes it responsive to window resizing while maintaining its aspect ratio.
+ * @param {HTMLCanvasElement} canvas - The canvas element.
+ */
 export function setCanvasDimensions(canvas) {
     canvas.width = GAME_WIDTH;
     canvas.height = GAME_HEIGHT;
 
+    // Adjust canvas display size for responsiveness
     const gameArea = canvas.parentElement;
     const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
 
@@ -22,5 +30,5 @@ export function setCanvasDimensions(canvas) {
     }
 
     window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    resizeCanvas(); // Initial call
 }

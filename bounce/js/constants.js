@@ -1,3 +1,6 @@
+// constants.js
+// This file defines all fixed game parameters and configurations.
+
 export const GAME_WIDTH = 800;
 export const GAME_HEIGHT = 500;
 export const PADDLE_WIDTH = 15;
