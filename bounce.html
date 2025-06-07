@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paddle Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        #game-area {
+            width: 600px;
+            height: 400px;
+            background-color: #000;
+            border: 2px solid #333;
+            position: relative;
+            overflow: hidden; /* Ensures ball doesn't visually escape if logic is slightly off */
+        }
+
+        .paddle {
+            width: 15px;
+            height: 80px;
+            background-color: #fff;
+            position: absolute;
+        }
+
+        #paddle1 {
+            left: 10px;
+            top: 160px; /* Initial position */
+        }
+
+        #paddle2 {
+            right: 10px;
+            top: 160px; /* Initial position */
+        }
+
+        #ball {
+            width: 15px;
+            height: 15px;
+            background-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            left: 292.5px; /* Initial position */
+            top: 192.5px;  /* Initial position */
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            width: 200px;
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 1.5em;
+            color: green;
+            min-height: 2em; /* Reserve space for messages */
+        }
+    </style>
+</head>
+<body>
+    <div class="score-board">
+        <div id="player1-score">0</div>
+        <div id="player2-score">0</div>
+    </div>
+    <div id="game-area">
+        <div id="paddle1" class="paddle"></div>
+        <div id="ball"></div>
+        <div id="paddle2" class="paddle"></div>
+    </div>
+    <div id="message" class="message"></div>
+
+    <script>
+        const gameArea = document.getElementById('game-area');
+        const paddle1 = document.getElementById('paddle1');
+        const paddle2 = document.getElementById('paddle2');
+        const ball = document.getElementById('ball');
+        const player1ScoreDisplay = document.getElementById('player1-score');
+        const player2ScoreDisplay = document.getElementById('player2-score');
+        const messageDisplay = document.getElementById('message');
+
+        // It's better to get dimensions after the DOM is fully loaded and rendered,
+        // or ensure these elements have fixed sizes defined in CSS that are known.
+        // For simplicity here, we'll assume they are available.
+        // However, for robustness, consider calling startGame or initializing dimensions
+        // inside a window.onload or DOMContentLoaded event.
+
+        let gameAreaHeight, gameAreaWidth, paddleHeight, ballSize;
+
+        let ballX, ballY;
+        let ballSpeedX = 4; // Pixels per frame
+        let ballSpeedY = 4; // Pixels per frame
+
+        let paddle1Y, paddle2Y;
+        const paddleSpeed = 8;
+
+        let player1Score = 0;
+        let player2Score = 0;
+        const winningScore = 5;
+
+        let gameRunning = true;
+
+        const keysPressed = {};
+
+        document.addEventListener('keydown', (event) => {
+            keysPressed[event.key.toLowerCase()] = true; // Normalize key to lowercase
+        });
+
+        document.addEventListener('keyup', (event) => {
+            keysPressed[event.key.toLowerCase()] = false; // Normalize key to lowercase
+        });
+
+        function initializeDimensions() {
+            gameAreaHeight = gameArea.clientHeight;
+            gameAreaWidth = gameArea.clientWidth;
+            paddleHeight = paddle1.clientHeight;
+            ballSize = ball.clientWidth;
+
+            ballX = gameAreaWidth / 2 - ballSize / 2;
+            ballY = gameAreaHeight / 2 - ballSize / 2;
+
+            paddle1Y = gameAreaHeight / 2 - paddleHeight / 2;
+            paddle2Y = gameAreaHeight / 2 - paddleHeight / 2;
+        }
+
+        function resetBall() {
+            ballX = gameAreaWidth / 2 - ballSize / 2;
+            ballY = gameAreaHeight / 2 - ballSize / 2;
+            // Randomize direction after score, ensure it's not too vertical
+            let angle = Math.random() * Math.PI / 2 - Math.PI / 4; // -45 to +45 degrees
+            if (Math.random() < 0.5) angle += Math.PI; // Other side
+
+            ballSpeedX = 5 * Math.cos(angle);
+            ballSpeedY = 5 * Math.sin(angle);
+
+            // Ensure ball moves towards a player
+            if (ballSpeedX === 0) ballSpeedX = Math.random() < 0.5 ? 3 : -3;
+        }
+
+        function updateScores() {
+            player1ScoreDisplay.textContent = player1Score;
+            player2ScoreDisplay.textContent = player2Score;
+        }
+
+        function checkWin() {
+            if (player1Score >= winningScore) {
+                messageDisplay.textContent = "Player 1 Wins! Refresh to play again.";
+                gameRunning = false;
+            } else if (player2Score >= winningScore) {
+                messageDisplay.textContent = "Player 2 Wins! Refresh to play again.";
+                gameRunning = false;
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning) {
+                return;
+            }
+
+            // Move Paddle 1 (Left)
+            if (keysPressed['w'] && paddle1Y > 0) {
+                paddle1Y -= paddleSpeed;
+            }
+            if (keysPressed['s'] && paddle1Y < gameAreaHeight - paddleHeight) {
+                paddle1Y += paddleSpeed;
+            }
+
+            // Move Paddle 2 (Right)
+            if (keysPressed['arrowup'] && paddle2Y > 0) { // Changed to lowercase
+                paddle2Y -= paddleSpeed;
+            }
+            if (keysPressed['arrowdown'] && paddle2Y < gameAreaHeight - paddleHeight) { // Changed to lowercase
+                paddle2Y += paddleSpeed;
+            }
+
+            // Ensure paddles don't go out of bounds (clamp position)
+            paddle1Y = Math.max(0, Math.min(paddle1Y, gameAreaHeight - paddleHeight));
+            paddle2Y = Math.max(0, Math.min(paddle2Y, gameAreaHeight - paddleHeight));
+
+            // Move Ball
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            // Ball collision with top/bottom walls
+            if (ballY <= 0 || ballY + ballSize >= gameAreaHeight) {
+                ballSpeedY *= -1;
+                ballY = Math.max(0, Math.min(ballY, gameAreaHeight - ballSize)); // Prevent sticking
+            }
+
+            // Ball collision with paddles
+            // Paddle 1 (Left)
+            if (ballX <= paddle1.offsetLeft + paddle1.offsetWidth &&
+                ballX + ballSize >= paddle1.offsetLeft &&
+                ballY + ballSize >= paddle1Y &&
+                ballY <= paddle1Y + paddleHeight) {
+                ballSpeedX *= -1;
+                ballX = paddle1.offsetLeft + paddle1.offsetWidth; // Prevent sticking
+                let hitPos = (ballY + ballSize / 2) - (paddle1Y + paddleHeight / 2);
+                ballSpeedY = hitPos * 0.15;
+            }
+
+            // Paddle 2 (Right)
+            if (ballX + ballSize >= paddle2.offsetLeft &&
+                ballX <= paddle2.offsetLeft + paddle2.offsetWidth &&
+                ballY + ballSize >= paddle2Y &&
+                ballY <= paddle2Y + paddleHeight) {
+                ballSpeedX *= -1;
+                ballX = paddle2.offsetLeft - ballSize; // Prevent sticking
+                let hitPos = (ballY + ballSize / 2) - (paddle2Y + paddleHeight / 2);
+                ballSpeedY = hitPos * 0.15;
+            }
+
+
+            // Ball goes out of bounds (scoring)
+            if (ballX < 0) { // Player 2 scores
+                player2Score++;
+                updateScores();
+                checkWin();
+                if (gameRunning) resetBall();
+            } else if (ballX + ballSize > gameAreaWidth) { // Player 1 scores
+                player1Score++;
+                updateScores();
+                checkWin();
+                if (gameRunning) resetBall();
+            }
+
+            // Update positions
+            paddle1.style.top = paddle1Y + 'px';
+            paddle2.style.top = paddle2Y + 'px';
+            ball.style.left = ballX + 'px';
+            ball.style.top = ballY + 'px';
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            initializeDimensions(); // Initialize dimensions here
+            updateScores();
+            resetBall();
+            paddle1.style.top = paddle1Y + 'px';
+            paddle2.style.top = paddle2Y + 'px';
+            messageDisplay.textContent = "First to 5 points wins! P1: W/S, P2: Up/Down Arrows";
+            gameLoop();
+        }
+
+        // Start the game once the DOM is fully loaded
+        window.addEventListener('DOMContentLoaded', startGame);
+
+        /*
+        Controls:
+        Player 1 (Left Paddle):
+        - 'w' key to move up
+        - 's' key to move down
+
+        Player 2 (Right Paddle):
+        - 'ArrowUp' key to move up
+        - 'ArrowDown' key to move down
+        */
+    </script>
+</body>
+</html>
