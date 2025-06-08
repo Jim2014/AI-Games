@@ -77,13 +77,14 @@
 
         // --- 游戏常量 ---
         const GRAVITY = 0.5;
-        const FRICTION = 0.9;
         const WINNING_SCORE = 5;
+        const BALL_DEFAULT_COLOR = '#DB7093'; // 灰紫色
+        const HIT_WINDOW_MS = 100; // 击球判定窗口时间
 
         // --- 游戏状态 ---
         let scores = { player1: 0, player2: 0 };
         let keys = {};
-        let gameOver = false;
+        let gameState = 'serving'; // 'serving', 'playing', 'gameOver'
         let servingPlayer = 1; // 1 或 2
 
         // --- 游戏对象 ---
@@ -101,7 +102,9 @@
             speed: 5, jumpPower: -12,
             canJump: true,
             color: '#FFD700', // 金色
-            controls: { up: 'w', left: 'a', right: 'd', down: 's', hit: 'g' }
+            controls: { up: 'w', left: 'a', right: 'd', down: 's', hit: 'g' },
+            isHitting: false,
+            hitTimeout: null
         };
 
         const player2 = {
@@ -111,18 +114,37 @@
             speed: 5, jumpPower: -12,
             canJump: true,
             color: '#FFB6C1', // 浅粉色
-            controls: { up: 'arrowup', left: 'arrowleft', right: 'arrowright', down: 'arrowdown', hit: 'l' }
+            controls: { up: 'arrowup', left: 'arrowleft', right: 'arrowright', down: 'arrowdown', hit: 'l' },
+            isHitting: false,
+            hitTimeout: null
         };
 
         const ball = {
             x: canvas.width / 4, y: canvas.height / 2,
             radius: 15,
             vx: 0, vy: 0,
-            color: '#DB7093' // 灰紫色
+            color: BALL_DEFAULT_COLOR
         };
 
         // --- 事件监听 ---
-        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keydown', e => {
+            const key = e.key.toLowerCase();
+            keys[key] = true;
+
+            // 设置玩家1的击球意图
+            if (key === player1.controls.hit && !player1.isHitting) {
+                player1.isHitting = true;
+                if(player1.hitTimeout) clearTimeout(player1.hitTimeout);
+                player1.hitTimeout = setTimeout(() => { player1.isHitting = false; }, HIT_WINDOW_MS);
+            }
+
+            // 设置玩家2的击球意图
+            if (key === player2.controls.hit && !player2.isHitting) {
+                player2.isHitting = true;
+                if(player2.hitTimeout) clearTimeout(player2.hitTimeout);
+                player2.hitTimeout = setTimeout(() => { player2.isHitting = false; }, HIT_WINDOW_MS);
+            }
+        });
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
         // --- 绘图函数 ---
@@ -151,7 +173,7 @@
             ctx.arc(player.x + eyeXOffset, player.y + 20, 3, 0, Math.PI * 2);
             ctx.fill();
 
-             // 脸颊
+            // 脸颊
             ctx.fillStyle = '#FF4500';
             const cheekXOffset = player.x < canvas.width / 2 ? 10 : player.width - 10;
             ctx.beginPath();
@@ -164,7 +186,7 @@
             ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
             ctx.fillStyle = ball.color;
             ctx.fill();
-            // 添加高光，使其看起来更像球体
+            // 添加高光
             ctx.beginPath();
             ctx.arc(ball.x - 5, ball.y - 5, 3, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -173,7 +195,6 @@
 
         function drawNet() {
             drawRect(net.x, net.y, net.width, net.height, '#555');
-            // 网的顶部
             drawRect(net.x - 5, net.y, net.width + 10, 5, '#555');
         }
 
@@ -189,34 +210,25 @@
 
         // --- 游戏逻辑更新 ---
         function updatePlayer(player) {
-            // 水平移动
-            if (keys[player.controls.left]) {
-                player.vx = -player.speed;
-            } else if (keys[player.controls.right]) {
-                player.vx = player.speed;
-            } else {
-                player.vx = 0;
-            }
+            if (keys[player.controls.left]) player.vx = -player.speed;
+            else if (keys[player.controls.right]) player.vx = player.speed;
+            else player.vx = 0;
 
-            // 跳跃
             if (keys[player.controls.up] && player.canJump) {
                 player.vy = player.jumpPower;
                 player.canJump = false;
             }
             
-            // 应用物理
             player.x += player.vx;
             player.vy += GRAVITY;
             player.y += player.vy;
 
-            // 边界检测
             const leftBoundary = player === player1 ? 0 : net.x + net.width;
             const rightBoundary = player === player1 ? net.x - player.width : canvas.width - player.width;
 
             if (player.x < leftBoundary) player.x = leftBoundary;
             if (player.x > rightBoundary) player.x = rightBoundary;
 
-            // 地面碰撞
             if (player.y + player.height > canvas.height) {
                 player.y = canvas.height - player.height;
                 player.vy = 0;
@@ -225,21 +237,16 @@
         }
 
         function updateBall() {
-            ball.vy += GRAVITY / 2; // 球受重力影响较小
+            ball.vy += GRAVITY / 2;
             ball.x += ball.vx;
             ball.y += ball.vy;
 
-            // 墙壁碰撞
-            if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
-                ball.vx *= -1;
-            }
-            // 天花板碰撞
+            if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) ball.vx *= -1;
             if (ball.y - ball.radius < 0) {
                 ball.y = ball.radius;
                 ball.vy *= -1;
             }
 
-            // 地面碰撞 = 得分
             if (ball.y + ball.radius > canvas.height) {
                 if (ball.x < canvas.width / 2) {
                     scores.player2++;
@@ -249,22 +256,20 @@
                     servingPlayer = 2;
                 }
                 checkWin();
-                if (!gameOver) reset(servingPlayer);
+                if (gameState !== 'gameOver') reset(servingPlayer);
             }
         }
         
         function checkCollisions() {
-            // 玩家与球的碰撞
             handleBallCollision(player1);
             handleBallCollision(player2);
 
-            // 球与网的碰撞
             if (ball.x + ball.radius > net.x && ball.x - ball.radius < net.x + net.width && ball.y + ball.radius > net.y) {
-                 if(ball.y < net.y){ // 球在网的上方，从侧面撞到网
-                    ball.vx *= -1.1; // 撞网后轻微加速
+                 if(ball.y < net.y){
+                    ball.vx *= -1.1;
                     ball.x = (ball.x < canvas.width/2) ? net.x - ball.radius : net.x + net.width + ball.radius;
-                 } else { // 球在网的下方或侧面，但低于网的高度
-                    ball.vy *= -0.5; // 从网下方反弹
+                 } else {
+                    ball.vy *= -0.5;
                     ball.vx *= -1.1;
                  }
             }
@@ -277,29 +282,26 @@
             const minDistance = player.width / 2 + ball.radius;
 
             if (distance < minDistance) {
-                const hitKeyPressed = keys[player.controls.hit];
+                const hitIntentActive = player.isHitting;
                 const downKeyPressed = keys[player.controls.down];
                 const isNearNet = Math.abs(player.x + player.width/2 - canvas.width/2) < 150;
                 const isAirborne = !player.canJump;
                 
-                // 计算反弹角度
                 const angle = Math.atan2(dy, dx);
                 const overlap = minDistance - distance;
-
-                // 防止卡住
                 ball.x -= overlap * Math.cos(angle);
                 ball.y -= overlap * Math.sin(angle);
                 
                 let hitStrength = 6;
                 let verticalBoost = -6;
 
-                // 核心击球逻辑
-                if (hitKeyPressed) {
-                    // 网前扣球
+                if (hitIntentActive) {
+                    player.isHitting = false; // 消耗掉本次击球意图
+                    clearTimeout(player.hitTimeout);
+
                     if (downKeyPressed && isAirborne && isNearNet && ball.y < net.y) {
                         hitStrength = 12; // 扣球力量
                         verticalBoost = 8; // 向下的力量
-                         // 添加视觉效果
                         flashEffect();
                     } else { // 大力击球
                         hitStrength = 10;
@@ -308,25 +310,40 @@
                     }
                 }
                 
-                // 应用球的速度
                 ball.vx = -Math.cos(angle) * hitStrength;
-                ball.vy = verticalBoost; // 直接设置垂直速度，给予更强的控制感
+                ball.vy = verticalBoost;
+            }
+        }
+        
+        function handleServe() {
+            const server = (servingPlayer === 1) ? player1 : player2;
+            let moveKeyPressed = false;
+            // 检查发球方是否按下了移动或跳跃键
+            for (const key in server.controls) {
+                if (key !== 'hit' && key !== 'down' && keys[server.controls[key]]) {
+                    moveKeyPressed = true;
+                    break;
+                }
+            }
+
+            if (moveKeyPressed) {
+                gameState = 'playing';
+                ball.vy = 1; // 开始下落
             }
         }
 
         function flashEffect() {
-            const originalColor = ball.color;
+            if (ball.color === 'white') return; // 防止重复触发
             ball.color = 'white';
-            setTimeout(() => { ball.color = originalColor; }, 100);
+            setTimeout(() => { ball.color = BALL_DEFAULT_COLOR; }, 100);
         }
 
         function checkWin() {
             if (scores.player1 >= WINNING_SCORE || scores.player2 >= WINNING_SCORE) {
-                gameOver = true;
+                gameState = 'gameOver';
                 const winner = scores.player1 >= WINNING_SCORE ? "玩家1" : "玩家2";
                 showMessage(`${winner} 胜利!`, 3000, () => {
                      scores = { player1: 0, player2: 0 };
-                     gameOver = false;
                      reset(1);
                      gameLoop();
                 });
@@ -334,24 +351,21 @@
         }
 
         function reset(playerToServe) {
+            gameState = 'serving';
+            servingPlayer = playerToServe;
             ball.vy = 0;
             ball.vx = 0;
             
-            if (playerToServe === 1) {
-                ball.x = player1.x + player1.width / 2;
-                ball.y = player1.y - 30;
-                ball.vx = 3;
-            } else {
-                ball.x = player2.x + player2.width / 2;
-                ball.y = player2.y - 30;
-                ball.vx = -3;
-            }
-            ball.vy = -5; // 发球时自动向上抛
-            
+            // 重置玩家位置
             player1.x = 100;
             player1.y = canvas.height - player1.height;
             player2.x = canvas.width - 150;
             player2.y = canvas.height - player2.height;
+
+            // 将球放在发球方头顶
+            const server = (playerToServe === 1) ? player1 : player2;
+            ball.x = server.x + server.width / 2;
+            ball.y = server.y - 50; // 放在头顶上方不动
         }
 
         function showMessage(text, duration, callback) {
@@ -364,13 +378,19 @@
         }
 
         function gameLoop() {
-            if (gameOver) return;
+            if (gameState === 'gameOver') return;
 
-            // 更新所有对象
-            updatePlayer(player1);
-            updatePlayer(player2);
-            updateBall();
-            checkCollisions();
+            // 根据游戏状态更新逻辑
+            if (gameState === 'playing') {
+                updatePlayer(player1);
+                updatePlayer(player2);
+                updateBall();
+                checkCollisions();
+            } else if (gameState === 'serving') {
+                updatePlayer(player1); // 允许玩家在发球时移动
+                updatePlayer(player2);
+                handleServe();
+            }
 
             // 清除画布并重绘
             ctx.clearRect(0, 0, canvas.width, canvas.height);
