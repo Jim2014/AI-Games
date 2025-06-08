@@ -86,6 +86,7 @@
         const HIT_STRENGTH_NORMAL = 10; // 击球力度
         const HIT_STRENGTH_SPIKE = 15; // 扣球力度
         const PLAYER_MOVE_SPEED = 7; // 玩家移动速度
+        const BALL_INITIAL_HEIGHT = 100; // 初始球相对于玩家头顶的高度
 
         // --- 游戏状态 ---
         let scores = { player1: 0, player2: 0 };
@@ -290,34 +291,43 @@
             if (distance < minDistance) {
                 const hitIntentActive = player.isHitting;
                 const downKeyPressed = keys[player.controls.down];
+                // Determine if forward key is pressed based on player side
+                const forwardKeyPressed = (player === player1 && keys[player.controls.right]) || (player === player2 && keys[player.controls.left]);
                 const isNearNet = Math.abs(player.x + player.width/2 - canvas.width/2) < 150;
                 const isAirborne = !player.canJump;
                 
-                const angle = Math.atan2(dy, dx);
+                // Determine player's forward direction for ball velocity
+                const directionMultiplier = (player === player1) ? 1 : -1;
+
+                // Prevent ball from sticking to player (simple push-out)
                 const overlap = minDistance - distance;
-                ball.x -= overlap * Math.cos(angle);
-                ball.y -= overlap * Math.sin(angle);
-                
-                let hitStrength = HIT_STRENGTH_NORMAL; // 默认击球力度
-                let verticalBoost = -6; // 默认垂直方向的击球力量
+                ball.x -= overlap * dx / distance;
+                ball.y -= overlap * dy / distance;
 
                 if (hitIntentActive) {
-                    player.isHitting = false; // 消耗掉本次击球意图
+                    player.isHitting = false; // Consume hit intent
                     clearTimeout(player.hitTimeout);
+                    flashEffect();
 
                     if (downKeyPressed && isAirborne && isNearNet && ball.y < net.y) {
-                        hitStrength = HIT_STRENGTH_SPIKE; // 扣球力量
-                        verticalBoost = 8; // 向下的力量
-                        flashEffect();
-                    } else { // 大力击球
-                        hitStrength = HIT_STRENGTH_NORMAL; // 大力击球
-                        verticalBoost = -8; // 大力击球是向上飞
-                        flashEffect();
+                        // Spike: 45 degrees downwards
+                        ball.vx = directionMultiplier * HIT_STRENGTH_SPIKE * Math.cos(Math.PI / 4);
+                        ball.vy = HIT_STRENGTH_SPIKE * Math.sin(Math.PI / 4);
+                    } else if (forwardKeyPressed) {
+                        // Horizontal hit: horizontally forward
+                        ball.vx = directionMultiplier * HIT_STRENGTH_NORMAL;
+                        ball.vy = 0; // Purely horizontal initially
+                    } else {
+                        // Upward hit: 45 degrees upwards
+                        ball.vx = directionMultiplier * HIT_STRENGTH_NORMAL * Math.cos(Math.PI / 4);
+                        ball.vy = -HIT_STRENGTH_NORMAL * Math.sin(Math.PI / 4);
                     }
+                } else {
+                    // Passive bounce if not actively hitting
+                    const angle = Math.atan2(dy, dx);
+                    ball.vx = -Math.cos(angle) * (HIT_STRENGTH_NORMAL * 0.5); // Reduced strength for passive bounce
+                    ball.vy = -Math.sin(angle) * (HIT_STRENGTH_NORMAL * 0.5);
                 }
-                
-                ball.vx = -Math.cos(angle) * hitStrength;
-                ball.vy = verticalBoost;
             }
         }
         
@@ -371,7 +381,7 @@
             // 将球放在发球方头顶
             const server = (playerToServe === 1) ? player1 : player2;
             ball.x = server.x + server.width / 2;
-            ball.y = server.y - 50; // 放在头顶上方不动
+            ball.y = server.y - BALL_INITIAL_HEIGHT; // 放在头顶上方不动，使用常量
         }
 
         function showMessage(text, duration, callback) {
