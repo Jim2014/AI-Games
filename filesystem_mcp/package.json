@@ -1,0 +1,12 @@
+{
+  "name": "filesystem_mcp",
+  "version": "1.0.0",
+  "description": "Filesystem MCP server",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx @modelcontextprotocol/server-filesystem ."
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server-filesystem": "latest"
+  }
+}
