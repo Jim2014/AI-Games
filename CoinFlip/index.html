@@ -38,6 +38,11 @@
   <button id="tailsBtn">Tails</button>
   <div id="coin" class="coin">?</div>
   <div id="result"></div>
+  <div id="stats">
+    Wins: <span id="wins">0</span>
+    Losses: <span id="losses">0</span>
+    Win Percentage: <span id="winPercentage">0%</span>
+  </div>
 
   <script>
     function coinFlip() {
@@ -48,6 +53,12 @@
     const tailsBtn = document.getElementById('tailsBtn');
     const coinEl = document.getElementById('coin');
     const resDiv = document.getElementById('result');
+    const winsEl = document.getElementById('wins');
+    const lossesEl = document.getElementById('losses');
+    const winPercentageEl = document.getElementById('winPercentage');
+
+    let wins = 0;
+    let losses = 0;
 
     headsBtn.addEventListener('click', () => play('heads'));
     tailsBtn.addEventListener('click', () => play('tails'));
@@ -70,10 +81,17 @@
         if (guess === result) {
           resDiv.textContent = `🎉 You guessed ${guess} and the coin landed on ${result}. You win!`;
           resDiv.style.color = 'green';
+          wins++;
         } else {
           resDiv.textContent = `❌ You guessed ${guess} but the coin landed on ${result}. Try again!`;
           resDiv.style.color = 'red';
+          losses++;
         }
+
+        const winPercentage = wins + losses > 0 ? (wins / (wins + losses) * 100).toFixed(2) : 0;
+        winsEl.textContent = wins;
+        lossesEl.textContent = losses;
+        winPercentageEl.textContent = winPercentage + '%';
       }, 1000); // match animation duration
     }
   </script>
