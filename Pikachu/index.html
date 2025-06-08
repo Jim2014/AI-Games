@@ -79,7 +79,7 @@
         const GRAVITY = 0.3; // 降低重力，使球下落更慢，反弹更高
         const WINNING_SCORE = 5;
         const BALL_DEFAULT_COLOR = '#DB7093'; // 灰紫色
-        const HIT_WINDOW_MS = 100; // 击球判定窗口时间
+        const HIT_WINDOW_MS = 300; // 击球判定窗口时间 (进一步增加以提供更多反应时间)
 
         // 新增游戏常量
         const BOUNCE_STRENGTH = 0.9; // 自然反弹力度 (0-1, 1为完全反弹)
@@ -325,16 +325,27 @@
                     }
                 } else {
                     // Passive bounce if not actively hitting
-                    const angle = Math.atan2(dy, dx);
-                    let bounceStrength = HIT_STRENGTH_NORMAL * 0.5; // Base strength
+                    const angle = Math.atan2(dy, dx); // Collision angle
+                    let bounceStrength = HIT_STRENGTH_NORMAL * 0.5; // Base strength for passive bounce
 
                     // Apply relative velocity boost if ball is falling and player is moving upwards
                     if (ball.vy > 0 && player.vy < 0) {
                         bounceStrength += Math.abs(player.vy) * RELATIVE_VELOCITY_BOOST;
                     }
                     
-                    ball.vx = -Math.cos(angle) * bounceStrength;
-                    ball.vy = -Math.sin(angle) * bounceStrength;
+                    // Calculate initial bounce velocities based on collision angle and strength
+                    let newVx = -Math.cos(angle) * bounceStrength;
+                    let newVy = -Math.sin(angle) * bounceStrength;
+
+                    // Ensure a consistent upward bounce (vertical bias)
+                    // If the ball is bouncing downwards or too horizontally, force it more upwards
+                    // This ensures "垂直反弹要一致" and "尽量向斜上方"
+                    if (newVy > -5) { // If vertical component is not strongly upwards enough (e.g., > -5 means it's less negative or positive)
+                        newVy = -Math.max(Math.abs(newVy), HIT_STRENGTH_NORMAL * 0.7); // Ensure a minimum strong upward velocity
+                    }
+                    
+                    ball.vx = newVx;
+                    ball.vy = newVy;
                 }
             }
         }
