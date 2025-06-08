@@ -38,6 +38,10 @@
   <button id="tailsBtn">Tails</button>
   <div id="coin" class="coin">?</div>
   <div id="result"></div>
+  <div>
+    Number of Guesses: <input type="number" id="numGuesses" value="10">
+    <button id="simulateBtn">Simulate Guesses</button>
+  </div>
   <div id="stats">
     Wins: <span id="wins">0</span>
     Losses: <span id="losses">0</span>
@@ -94,6 +98,22 @@
         winPercentageEl.textContent = winPercentage + '%';
       }, 1000); // match animation duration
     }
+
+    const simulateBtn = document.getElementById('simulateBtn');
+    const numGuessesInput = document.getElementById('numGuesses');
+
+    simulateBtn.addEventListener('click', () => {
+      const numGuesses = parseInt(numGuessesInput.value);
+      if (isNaN(numGuesses) || numGuesses <= 0) {
+        alert('Please enter a valid number of guesses.');
+        return;
+      }
+
+      for (let i = 0; i < numGuesses; i++) {
+        const guess = Math.random() < 0.5 ? 'heads' : 'tails';
+        play(guess);
+      }
+    });
   </script>
 </body>
 </html>
