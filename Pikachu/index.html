@@ -352,16 +352,8 @@
         
         function handleServe() {
             const server = (servingPlayer === 1) ? player1 : player2;
-            let moveKeyPressed = false;
-            // 检查发球方是否按下了移动或跳跃键
-            for (const key in server.controls) {
-                if (key !== 'hit' && key !== 'down' && keys[server.controls[key]]) {
-                    moveKeyPressed = true;
-                    break;
-                }
-            }
-
-            if (moveKeyPressed) {
+            // 只有按上键才能开始游戏
+            if (keys[server.controls.up]) {
                 gameState = 'playing';
                 ball.vy = 1; // 开始下落
             }
