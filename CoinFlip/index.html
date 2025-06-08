@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Coin Flip Guessing Game</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+    #result { font-size: 20px; margin-top: 20px; }
+    .coin {
+      width: 100px;
+      height: 100px;
+      margin: 20px auto;
+      border-radius: 50%;
+      background: radial-gradient(circle at top left, #ffeb3b, #fbc02d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: #333;
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
+    }
+    .flip {
+      animation: flip 1s;
+    }
+    @keyframes flip {
+      from { transform: perspective(400px) rotateY(0deg); }
+      to { transform: perspective(400px) rotateY(1800deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Coin Flip Guessing Game</h1>
+  <p>Guess which way the coin will land:</p>
+  <button id="headsBtn">Heads</button>
+  <button id="tailsBtn">Tails</button>
+  <div id="coin" class="coin">?</div>
+  <div id="result"></div>
+
+  <script>
+    function coinFlip() {
+      return Math.random() < 0.5 ? 'heads' : 'tails';
+    }
+
+    const headsBtn = document.getElementById('headsBtn');
+    const tailsBtn = document.getElementById('tailsBtn');
+    const coinEl = document.getElementById('coin');
+    const resDiv = document.getElementById('result');
+
+    headsBtn.addEventListener('click', () => play('heads'));
+    tailsBtn.addEventListener('click', () => play('tails'));
+
+    function play(guess) {
+      // Reset coin face and result text
+      coinEl.textContent = '?';
+      resDiv.textContent = '';
+
+      // Trigger flip animation
+      coinEl.classList.remove('flip');
+      // Force reflow to restart animation
+      void coinEl.offsetWidth;
+      coinEl.classList.add('flip');
+
+      // After animation, show result
+      setTimeout(() => {
+        const result = coinFlip();
+        coinEl.textContent = result === 'heads' ? 'H' : 'T';
+        if (guess === result) {
+          resDiv.textContent = `🎉 You guessed ${guess} and the coin landed on ${result}. You win!`;
+          resDiv.style.color = 'green';
+        } else {
+          resDiv.textContent = `❌ You guessed ${guess} but the coin landed on ${result}. Try again!`;
+          resDiv.style.color = 'red';
+        }
+      }, 1000); // match animation duration
+    }
+  </script>
+</body>
+</html>
