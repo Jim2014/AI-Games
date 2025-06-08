@@ -87,6 +87,7 @@
         const HIT_STRENGTH_SPIKE = 15; // 扣球力度
         const PLAYER_MOVE_SPEED = 7; // 玩家移动速度
         const BALL_INITIAL_HEIGHT = 100; // 初始球相对于玩家头顶的高度
+        const RELATIVE_VELOCITY_BOOST = 0.5; // 相对速度对反弹的额外加成
 
         // --- 游戏状态 ---
         let scores = { player1: 0, player2: 0 };
@@ -325,8 +326,15 @@
                 } else {
                     // Passive bounce if not actively hitting
                     const angle = Math.atan2(dy, dx);
-                    ball.vx = -Math.cos(angle) * (HIT_STRENGTH_NORMAL * 0.5); // Reduced strength for passive bounce
-                    ball.vy = -Math.sin(angle) * (HIT_STRENGTH_NORMAL * 0.5);
+                    let bounceStrength = HIT_STRENGTH_NORMAL * 0.5; // Base strength
+
+                    // Apply relative velocity boost if ball is falling and player is moving upwards
+                    if (ball.vy > 0 && player.vy < 0) {
+                        bounceStrength += Math.abs(player.vy) * RELATIVE_VELOCITY_BOOST;
+                    }
+                    
+                    ball.vx = -Math.cos(angle) * bounceStrength;
+                    ball.vy = -Math.sin(angle) * bounceStrength;
                 }
             }
         }
